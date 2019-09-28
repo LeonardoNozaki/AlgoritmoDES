@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 //mask de bit serve para pegar um bit especifico
-//pegar o antipenultimo bit da direita, aplicar and bit a bit com o valor e a maskBit[3]
+//pegar o antipenultimo bit da direita, aplicar and bit a bit com o valor e a maskBit[61]
 //onde a maskBit[61] é = ...000100
 unsigned long long int maskBit[64];
 
@@ -124,23 +124,25 @@ unsigned long long int permutacaoInicial(unsigned long long int entrada){
 
 unsigned long long int expancao(int right){
   int map[] = {32,1,2,3,4,5, 4,5,6,7,8,9, 8,9,10,11,12,13, 12,13,14,15,16,17, 16,17,18,19,20,21, 20,21,22,23,24,25, 24,25,26,27,28,29, 28,29,30,31,32,1};
-  int resultado = 0, aux;
+  unsigned long long int resultado = 0;
+  int aux;
   int posMap, posInicial, posResultado;
 
   for(int i = 0; i < 48; i++){
     posMap = map[i];
-    aux = right & maskBit[32-posMap];
+    aux = right & maskBit[posMap+31];
 
-    posInicial = 32-posMap;
-    posResultado = 47-i;
+    posInicial = 32-posMap; //posição do bit do aux
+    posResultado = 47-i;  //a diferença entre posInicial/posResultado é a qtd de deslocamento do bit
 
+    //shift right
     if(posInicial > posResultado){
       while(posInicial > posResultado){
         aux = aux/2;
         posInicial--;
       }
       resultado += aux;
-    }
+    }//shift left
     else if(posInicial < posResultado){
       while(posInicial < posResultado){
         aux = aux * 2;
@@ -187,10 +189,11 @@ int main(){
   printf("\nCHAVE\n");
   printLongLongToHEX(chave, 64);
 
-  //Continuar daqui
+  printf("\nEXPANCAO\n");
   int right;
   unsigned long long int exp = 0;
   exp = expancao(right);
-
+  printf("%ul\n", exp);
+  printLongLongToHEX(exp, 64);
 
 }
