@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "des.h"
 
 //mask de bit serve para pegar um bit especifico
 //pegar o antipenultimo bit da direita, aplicar and bit a bit com o valor e a maskBit[61]
@@ -6,9 +7,10 @@
 unsigned long long int maskBit[64];
 
 //mask de bloco serve para pegar um bloco de 8 bits especifico
-//pegar o penultimo bloco, aplicar and bit a bit com o valor e a maskBloco[1]
-//onde a maskBloco[6] é = ...0001111111100000000
-unsigned long long int maskBloco[8];
+//pegar o penultimo bloco, aplicar and bit a bit com o valor e a maskBloco8[1]
+//onde a maskBloco8[6] é = ...0001111111100000000
+unsigned long long int maskBloco8[8];
+unsigned long long int maskBloco6[8];
 
 //Faz a inicializacao da maskBit
 void inicializacaoMaskBit(){
@@ -18,11 +20,19 @@ void inicializacaoMaskBit(){
   }
 }
 
-//Faz a inicializacao da maskBloco
-void inicializacaoMaskBloco(){
-  maskBloco[7] = 255;
+//Faz a inicializacao da maskBloco8
+void inicializacaoMaskBloco8(){
+  maskBloco8[7] = 255;
   for(int i = 6; i >=0; i--){
-    maskBloco[i] = maskBloco[i+1] * 256;
+    maskBloco8[i] = maskBloco8[i+1] * 256;
+  }
+}
+
+//Faz a inicializacao da maskBloco6
+void inicializacaoMaskBloco6(){
+  maskBloco6[7] = 63;
+  for(int i = 6; i >=0; i--){
+    maskBloco6[i] = maskBloco6[i+1] * 64;
   }
 }
 
@@ -45,7 +55,7 @@ unsigned long long int toLongLongInt(int vetor[8]){
 void printLongLongToHEX(unsigned long long int valor, int size){
   int qnt = (size/8);
   for(int i = 0; i < qnt; i++){
-    unsigned long long int resultado = valor & maskBloco[i];
+    unsigned long long int resultado = valor & maskBloco8[i];
     int deslocamento = 7 - i;
 
     while(deslocamento > 0){
@@ -255,7 +265,7 @@ unsigned long long int expancao(int right){
 
 int main(){
   inicializacaoMaskBit();
-  inicializacaoMaskBloco();
+  inicializacaoMaskBloco8();
 
   //Precisa ser vetor para fazer a leitura da entrada
   int vetorEntrada[8], vetorChave[8];
@@ -299,4 +309,44 @@ int main(){
   printf("%ul\n", exp);
   printLongLongToHEX(exp, 64);
 
+}
+
+int sBox(unsigned long long int entrada){
+  int aux, linha, coluna, resultado;
+  aux = linha = coluna = resultado = 0;
+  for(int i=0; i < 8; i++){
+    aux = entrada & maskBloco6[i]; //pega 6 bits da Si ex: 101001
+    linha = aux & maskBit[63]; //pega o primeiro bit mais significativo ex: 000001
+    linha += (aux & maskBit[58])/16; //pega o ultimo bit e desloca para segunda posição ex: 101001 -> 000010
+    coluna += aux & 30; //30 = 011110
+
+    switch(i){
+      case 0:
+        resultado += S1[linha][coluna];
+        break;
+      case 1:
+        resultado += S2[linha][coluna];
+        break;
+      case 2:
+        resultado += S3[linha][coluna];
+        break;
+      case 3:
+        resultado += S4[linha][coluna];
+        break;
+      case 4:
+        resultado += S5[linha][coluna];
+        break;
+      case 5:
+        resultado += S6[linha][coluna];
+        break;
+      case 6:
+        resultado += S7[linha][coluna];
+        break;
+      case 7:
+        resultado += S8[linha][coluna];
+        break;
+    }
+  }
+
+  return resultado;
 }
