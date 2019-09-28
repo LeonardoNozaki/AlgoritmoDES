@@ -122,6 +122,102 @@ unsigned long long int permutacaoInicial(unsigned long long int entrada){
   return ip;
 }
 
+//Realiza a permutacao inicial da chave
+//Exemplo de entrada: entrada = 696E74726F647563
+//Retorno: FF4C76D100FF139A em uma unica variavel int long long
+unsigned long long int permutacaoChavePC1(unsigned long long int chave){
+  int map[] ={57,49,41,33,25,17,9,1,
+              58,50,42,34,26,18,10,2,
+              59,51,43,35,27,19,11,3,
+              60,52,44,36,63,55,47,39,
+              31,23,15,7,62,54,46,38,
+              30,22,14,6,61,53,45,37,
+              29,21,13,5,28,20,12,4};
+
+  unsigned long long int resultado = 0, aux, posMap;
+  for(int i = 0; i < 56; i++){
+    //Valor i é a posicao que deve colocar o resultado
+    //Valor posMap é o bit que vai ser pego da entrada
+    posMap = map[i];
+
+    aux = chave & maskBit[posMap];
+    if(posMap < i){
+      while(posMap < i){
+        aux = aux / 2;
+        posMap++;
+      }
+      resultado += aux;
+    }
+    else if(posMap > i){
+      while(posMap > i){
+        aux = aux * 2;
+        posMap--;
+      }
+      resultado += aux;
+    }
+    else{
+      resultado += aux;
+    }
+  }
+  return resultado;
+}
+
+unsigned long long int rotacaoChave(unsigned long long int chave, int round){
+  unsigned long long int resultado = 0;
+  unsigned long long int C0, D0;
+  unsigned long long int maskC = 72057593769492480, maskD = 268435455;
+  unsigned long long int aux, aux1;
+  C0 = chave & maskC;
+  D0 = chave & maskD;
+  if(round == 1 || round == 2 || round == 9 || round == 16){
+    aux = C0 & maskBit[55];
+    C0 = C0 - aux;
+    C0 = C0 * 2; //Rotacao pra esquerda
+    if(aux != 0){
+      C0 = C0 + 268435456;
+    }
+  }
+  else{
+    aux = C0 & maskBit[55];
+    aux1 = C0 & maskBit[54];
+    C0 = C0 - aux;
+    C0 = C0 - aux1;
+    C0 = C0 * 4; //Rotacao para a esquerda duas vezes
+    if(aux != 0){
+      C0 = C0 + 536870912;
+    }
+    if(aux1 != 0){
+      C0 = C0 + 268435456;
+    }
+  }
+  if(round == 1 || round == 2 || round == 9 || round == 16){
+    aux = D0 & maskBit[27];
+    D0 = D0 - aux;
+    D0 = D0 * 2; //Rotacao pra esquerda
+    if(aux != 0){
+      D0 = D0 + 1;
+    }
+  }
+  else{
+    aux = D0 & maskBit[27];
+    aux1 = D0 & maskBit[26];
+    D0 = D0 - aux;
+    D0 = D0 - aux1;
+    D0 = D0 * 4; //Rotacao para a esquerda duas vezes
+    if(aux != 0){
+      D0 = D0 + 536870912;
+    }
+    if(aux1 != 0){
+      D0 = D0 + 268435456;
+    }
+  }
+  return C0 + D0;
+}
+unsigned long long int escalonamentoChavePC2(unsigned long long int chave, int round){
+
+
+}
+
 unsigned long long int expancao(int right){
   int map[] = {32,1,2,3,4,5, 4,5,6,7,8,9, 8,9,10,11,12,13, 12,13,14,15,16,17, 16,17,18,19,20,21, 20,21,22,23,24,25, 24,25,26,27,28,29, 28,29,30,31,32,1};
   unsigned long long int resultado = 0;
@@ -188,6 +284,13 @@ int main(){
   //Escrita da entrada da chave
   printf("\nCHAVE\n");
   printLongLongToHEX(chave, 64);
+
+	int round = 1;
+  chave = permutacaoChavePC1(chave);
+  printLongLongToHEX(chave, 56);
+  printf("\nCHAVE\n");
+  chave = rotacaoChave(chave, round);
+  printLongLongToHEX(chave, 56);
 
   printf("\nEXPANCAO\n");
   int right;
