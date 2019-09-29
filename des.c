@@ -54,7 +54,7 @@ unsigned long long int toLongLongInt(int vetor[8]){
 //Print: 69 6E 74 72 6F 64 75 63
 void printLongLongToHEX(unsigned long long int valor, int size){
   int qnt = (size/8);
-  for(int i = 0; i < qnt; i++){
+  for(int i = 8 - qnt; i < 8; i++){
     unsigned long long int resultado = valor & maskBloco8[i];
     int deslocamento = 7 - i;
 
@@ -63,11 +63,11 @@ void printLongLongToHEX(unsigned long long int valor, int size){
       deslocamento--;
     }
 
-    if(i == 0){
-      printf("%02llX", resultado);
+    if(i == 8 - qnt){
+      printf("%02llX ", resultado);
     }
     else{
-      printf(" %02llX", resultado);
+      printf("%02llX ", resultado);
     }
   }
   printf("\n");
@@ -136,30 +136,33 @@ unsigned long long int permutacaoInicial(unsigned long long int entrada){
 //Exemplo de entrada: entrada = 696E74726F647563
 //Retorno: FF4C76D100FF139A em uma unica variavel int long long
 unsigned long long int permutacaoChavePC1(unsigned long long int chave){
-  int map[] ={57,49,41,33,25,17,9,1,
-              58,50,42,34,26,18,10,2,
-              59,51,43,35,27,19,11,3,
-              60,52,44,36,63,55,47,39,
-              31,23,15,7,62,54,46,38,
-              30,22,14,6,61,53,45,37,
-              29,21,13,5,28,20,12,4};
+  int pc1[56] = {56, 48, 40, 32, 24, 16, 8,
+               0, 57, 49, 41, 33, 25, 17,
+              9, 1, 58, 50, 42, 34, 26,
+              18, 10, 2, 59, 51, 43, 35,
+              62, 54, 46, 38, 30, 22, 14,
+               6, 61, 53, 45, 37, 29, 21,
+              13, 5, 60, 52, 44, 36, 28,
+              20, 12, 4, 27, 19, 11, 3};
+             
 
-  unsigned long long int resultado = 0, aux, posMap;
+  unsigned long long int resultado = 0, aux, posMap, pos;
   for(int i = 0; i < 56; i++){
     //Valor i é a posicao que deve colocar o resultado
     //Valor posMap é o bit que vai ser pego da entrada
-    posMap = map[i];
+    posMap = pc1[i];
 
     aux = chave & maskBit[posMap];
-    if(posMap < i){
-      while(posMap < i){
+		pos = i + 8;
+    if(posMap < pos){
+      while(posMap < pos){
         aux = aux / 2;
         posMap++;
       }
       resultado += aux;
     }
-    else if(posMap > i){
-      while(posMap > i){
+    else if(posMap > pos){
+      while(posMap > pos){
         aux = aux * 2;
         posMap--;
       }
@@ -174,13 +177,14 @@ unsigned long long int permutacaoChavePC1(unsigned long long int chave){
 
 unsigned long long int rotacaoChave(unsigned long long int chave, int round){
   unsigned long long int resultado = 0;
-  unsigned long long int C0, D0;
+  unsigned long long int C0 = 0, D0 = 0;
   unsigned long long int maskC = 72057593769492480, maskD = 268435455;
   unsigned long long int aux, aux1;
   C0 = chave & maskC;
   D0 = chave & maskD;
   if(round == 1 || round == 2 || round == 9 || round == 16){
-    aux = C0 & maskBit[55];
+		aux = 0;    
+		aux = C0 & maskBit[8];
     C0 = C0 - aux;
     C0 = C0 * 2; //Rotacao pra esquerda
     if(aux != 0){
@@ -188,8 +192,10 @@ unsigned long long int rotacaoChave(unsigned long long int chave, int round){
     }
   }
   else{
-    aux = C0 & maskBit[55];
-    aux1 = C0 & maskBit[54];
+		aux = 0;
+		aux1 = 0;
+    aux = C0 & maskBit[8];
+    aux1 = C0 & maskBit[9];
     C0 = C0 - aux;
     C0 = C0 - aux1;
     C0 = C0 * 4; //Rotacao para a esquerda duas vezes
@@ -201,7 +207,8 @@ unsigned long long int rotacaoChave(unsigned long long int chave, int round){
     }
   }
   if(round == 1 || round == 2 || round == 9 || round == 16){
-    aux = D0 & maskBit[27];
+		aux = 0;	    
+		aux = D0 & maskBit[36];
     D0 = D0 - aux;
     D0 = D0 * 2; //Rotacao pra esquerda
     if(aux != 0){
@@ -209,27 +216,72 @@ unsigned long long int rotacaoChave(unsigned long long int chave, int round){
     }
   }
   else{
-    aux = D0 & maskBit[27];
-    aux1 = D0 & maskBit[26];
+		aux = 0;
+		aux1 = 0;
+    aux = D0 & maskBit[36];
+    aux1 = D0 & maskBit[37];
     D0 = D0 - aux;
     D0 = D0 - aux1;
     D0 = D0 * 4; //Rotacao para a esquerda duas vezes
     if(aux != 0){
-      D0 = D0 + 536870912;
+      D0 = D0 + 2;
     }
     if(aux1 != 0){
-      D0 = D0 + 268435456;
+      D0 = D0 + 1;
     }
   }
   return C0 + D0;
 }
-unsigned long long int escalonamentoChavePC2(unsigned long long int chave, int round){
+unsigned long long int escalonamentoChavePC2(unsigned long long int chave){
+	int pc2[48] = {13, 16, 10, 23, 0, 4,
+               2, 27, 14, 5, 20, 9,
+               22, 18, 11, 3, 25, 7,
+               15, 6, 26, 19, 12, 1,
+               40, 51, 30, 36, 46, 54,
+               29, 39, 50, 44, 32, 47,
+               43, 48, 38, 55, 33, 52,
+				 			 45, 41, 49, 35, 28, 31};
 
+  unsigned long long int resultado = 0, aux, posMap, pos;
+  for(int i = 0; i < 48; i++){
+    //Valor i é a posicao que deve colocar o resultado
+    //Valor posMap é o bit que vai ser pego da entrada
+    posMap = pc2[i];
 
+    aux = chave & maskBit[posMap+8];
+		pos = i + 8;
+    if(posMap < pos){
+      while(posMap < pos){
+        aux = aux / 2;
+        posMap++;
+      }
+      resultado += aux;
+    }
+    else if(posMap > pos){
+      while(posMap > pos){
+        aux = aux * 2;
+        posMap--;
+      }
+      resultado += aux;
+    }
+    else{
+      resultado += aux;
+    }
+  }
+  return resultado;
 }
 
 unsigned long long int expancao(int right){
-  int map[] = {32,1,2,3,4,5, 4,5,6,7,8,9, 8,9,10,11,12,13, 12,13,14,15,16,17, 16,17,18,19,20,21, 20,21,22,23,24,25, 24,25,26,27,28,29, 28,29,30,31,32,1};
+  int map[48] = {31, 0, 1, 2, 3, 4,
+							3, 4, 5, 6, 7, 8,
+							7, 8, 9, 10, 11, 12,
+							11, 12, 13, 14, 15, 16,
+							15, 16, 17, 18, 19, 20,
+							19, 20, 21, 22, 23, 24,
+							23, 24, 25, 26, 27, 28,
+							27, 28, 29, 30, 31, 0};
+
+
   unsigned long long int resultado = 0;
   int aux;
   int posMap, posInicial, posResultado;
@@ -292,21 +344,28 @@ int main(){
   printLongLongToHEX(ip, 64);
 
   //Escrita da entrada da chave
-  printf("\nCHAVE\n");
+  printf("\nCHAVE\n\n");
   printLongLongToHEX(chave, 64);
 
-	int round = 1;
-  chave = permutacaoChavePC1(chave);
-  printLongLongToHEX(chave, 56);
-  printf("\nCHAVE\n");
-  chave = rotacaoChave(chave, round);
-  printLongLongToHEX(chave, 56);
 
+	unsigned long long int aux;
+
+  chave = permutacaoChavePC1(chave);
+	
+	for(int round = 1; round <= 16; round++){
+		chave = rotacaoChave(chave, round);
+		aux = escalonamentoChavePC2(chave);
+		printf("CHAVE DE ROUND %d\n", round);
+		printLongLongToHEX(aux, 48);
+	}
+
+
+	
   printf("\nEXPANCAO\n");
   int right;
   unsigned long long int exp = 0;
   exp = expancao(right);
-  printf("%ul\n", exp);
+  printf("%llu\n", exp);
   printLongLongToHEX(exp, 64);
 
 }
