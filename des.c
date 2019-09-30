@@ -14,8 +14,6 @@ unsigned long long int maskBloco6[8];
 
 //mascara para pegar os 32 bits da direita
 unsigned long long int rightMask = 4294967295;
-//mascara para pegar os 32 bits da esquerda
-unsigned long long int leftMask = 18446744069414584000;
 
 //Faz a inicializacao da maskBit
 void inicializacaoMaskBit(){
@@ -354,8 +352,8 @@ int main(){
 
   //L e R
   int right = ip & rightMask;
-  unsigned long long int left = ip & leftMask;
-  left >> 32;
+  int left = ip >> 32;
+	printf("divisao %X \n%X\n", left, right);
   //Escrita da entrada da chave
   printf("\nCHAVE\n\n");
   printLongLongToHEX(chave, 64);
