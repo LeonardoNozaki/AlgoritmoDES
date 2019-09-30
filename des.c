@@ -42,6 +42,197 @@ void inicializacaoMaskBloco6(){
 //Converte um conjunto de valores em hex em uma unica variavel int long long
 //Exemplo de entrada: vetor[8] = {69, 6E, 74, 72, 6F, 64, 75, 63}
 //Retorno: 696E74726F647563 em uma unica variavel int long long
+unsigned long long int toLongLongInt(int vetor[8]);
+
+//Printa todos os valores da entrada de forma 1 byte por vez em HEXA
+//Exemplo de entrada: valor = 696E74726F647563 e size = 64
+//Print: 69 6E 74 72 6F 64 75 63
+void printLongLongToHEX(unsigned long long int valor, int size);
+
+//Realiza a permutacao inicial
+//Exemplo de entrada: entrada = 696E74726F647563
+//Retorno: FF4C76D100FF139A em uma unica variavel int long long
+unsigned long long int permutacaoInicial(unsigned long long int entrada);
+
+//Realiza a permutacao inicial da chave
+//Exemplo de entrada: entrada = 696E74726F647563
+//Retorno: FF4C76D100FF139A em uma unica variavel int long long
+unsigned long long int permutacaoChavePC1(unsigned long long int chave);
+
+unsigned long long int rotacaoChave(unsigned long long int chave, int round);
+unsigned long long int escalonamentoChavePC2(unsigned long long int chave);
+unsigned long long int expancao(int right);
+int sBox(unsigned long long int entrada);
+int permutacaoP(int value);
+
+int main(){
+  inicializacaoMaskBit();
+  inicializacaoMaskBloco8();
+  inicializacaoMaskBloco6();
+
+  //Precisa ser vetor para fazer a leitura da entrada
+  int vetorEntrada[8], vetorChave[8];
+
+  //Leitura da entrada do texto
+  for(int i = 0; i < 8; i++){
+    scanf("%x", &vetorEntrada[i]);
+  }
+  unsigned long long int entrada = toLongLongInt(vetorEntrada);
+
+  //Leitura da entrada da chave
+  for(int i = 0; i < 8; i++){
+    scanf("%x", &vetorChave[i]);
+  }
+  unsigned long long int chave = toLongLongInt(vetorChave);
+
+  //Escrita da entrada do texto
+  printf("PLAIN TEXT\n");
+  printLongLongToHEX(entrada, 64);
+
+  //Escrita da entrada depois da Permutacao Inicial
+  printf("\nIP\n");
+  unsigned long long int ip = permutacaoInicial(entrada);
+  printLongLongToHEX(ip, 64);
+
+  //L e R
+  int right = ip & rightMask;
+  int left = ip >> 32;
+	printf("divisao %X \n%X\n", left, right);
+  //Escrita da entrada da chave
+  printf("\nCHAVE\n\n");
+  printLongLongToHEX(chave, 64);
+
+
+	unsigned long long int aux;
+
+  chave = permutacaoChavePC1(chave);
+	
+	for(int round = 1; round <= 16; round++){
+		chave = rotacaoChave(chave, round);
+		aux = escalonamentoChavePC2(chave);
+		printf("CHAVE DE ROUND %d\n", round);
+		printLongLongToHEX(aux, 48);
+
+    printf("\nEXPANCAO\n");
+    unsigned long long int exp = 0;
+    exp = expancao(right);
+    printLongLongToHEX(exp, 64);
+
+    printf("\nXOR\n");
+    unsigned long long int xorResult = 0;
+    xorResult = exp ^ chave;
+    printLongLongToHEX(xorResult, 64);
+
+    //unsigned long long int steste = 211420430091726;
+    printf("\nsBOX\n");
+    int sboxResult = sBox(xorResult);
+    printf("%X\n", sboxResult);
+
+    printf("\nPermutacao P\n");
+    int PermutacaoP = permutacaoP(sboxResult);
+    printf("P: %X\n", PermutacaoP);
+
+    printf("\nRound %d\n", round);
+    PermutacaoP = left ^ PermutacaoP;
+    unsigned long long int round1 = 0;
+    round1 += right;
+    round1 = round1 << 32;
+    printLongLongToHEX(round1, 64);
+    round1 += PermutacaoP;
+
+    printLongLongToHEX(round1, 64);
+
+    getchar();
+	}
+
+}
+
+int sBox(unsigned long long int entrada){
+  int resultado = 0;
+  unsigned long long int aux, linha, linhaAux1, linhaAux2, coluna, tableValue;
+  aux = linha = linhaAux1 = linhaAux2 = coluna = tableValue = 0;
+  unsigned long long int maskColuna = 30;
+  for(int i=0; i < 8; i++){
+    aux = entrada & maskBloco6[i]; //pega 6 bits da Si ex: 101001
+    aux = aux >> (42-(i*6));
+
+    linhaAux1 = aux & maskBit[63];
+    linhaAux2 = aux & maskBit[58];
+    linhaAux2 = linhaAux2 >> 4;
+    linha = linhaAux1 | linhaAux2;
+
+    //printf("linha: %llu\n", linha);
+    coluna = aux & maskColuna; //maskcoluna = 30 = 011110
+    coluna = coluna >> 1;
+    //printf("coluna: %llu\n", coluna);
+
+    switch(i){
+      case 0:
+        tableValue = S1[linha][coluna];
+        break;
+      case 1:
+        tableValue = S2[linha][coluna];
+        break;
+      case 2:
+        tableValue = S3[linha][coluna];
+        break;
+      case 3:
+        tableValue = S4[linha][coluna];
+        break;
+      case 4:
+        tableValue = S5[linha][coluna];
+        break;
+      case 5:
+        tableValue = S6[linha][coluna];
+        break;
+      case 6:
+        tableValue = S7[linha][coluna];
+        break;
+      case 7:
+        tableValue = S8[linha][coluna];
+        break;
+    }
+
+    for(int j=0; j<28-(i*4); j++){
+      tableValue = tableValue*2;
+    }
+    resultado = resultado | tableValue;
+  }
+  return resultado;
+}
+
+int permutacaoP(int value){
+  int pTable[32] = {16,7,20,21,29,12,28,17,1,15,23,26,5,18,31,10,2,8,24,14,32,27,3,9,19,13,30,6,22,11,4,25};
+  int resultado, aux, posMap, posInicial, posResultado;
+  resultado = aux = 0;
+  for(int i=0; i < 32; i++){
+    posMap = pTable[i];
+    aux = value & maskBit[posMap+31];
+
+    posInicial = 32-posMap;
+    //shift left
+    if(posInicial > i){
+      while(posInicial > i){
+        aux = aux*2;
+        posInicial--;
+      }
+      resultado += aux;
+    }//shift right
+    else if(posInicial < i){
+      while(posInicial < i){
+        aux = aux/2;
+        posInicial++;
+      }
+      resultado += aux;
+    }
+    else{
+      resultado += aux;
+    }
+  }
+
+  return resultado;
+}
+
 unsigned long long int toLongLongInt(int vetor[8]){
   unsigned long long int resultado = 0;
   unsigned long long int mult = 1;
@@ -52,9 +243,6 @@ unsigned long long int toLongLongInt(int vetor[8]){
   return resultado;
 }
 
-//Printa todos os valores da entrada de forma 1 byte por vez em HEXA
-//Exemplo de entrada: valor = 696E74726F647563 e size = 64
-//Print: 69 6E 74 72 6F 64 75 63
 void printLongLongToHEX(unsigned long long int valor, int size){
   int qnt = (size/8);
   for(int i = 8 - qnt; i < 8; i++){
@@ -76,9 +264,6 @@ void printLongLongToHEX(unsigned long long int valor, int size){
   printf("\n");
 }
 
-//Realiza a permutacao inicial
-//Exemplo de entrada: entrada = 696E74726F647563
-//Retorno: FF4C76D100FF139A em uma unica variavel int long long
 unsigned long long int permutacaoInicial(unsigned long long int entrada){
   //Variaveis auxiliares
   unsigned long long int ip = 0;
@@ -135,9 +320,6 @@ unsigned long long int permutacaoInicial(unsigned long long int entrada){
   return ip;
 }
 
-//Realiza a permutacao inicial da chave
-//Exemplo de entrada: entrada = 696E74726F647563
-//Retorno: FF4C76D100FF139A em uma unica variavel int long long
 unsigned long long int permutacaoChavePC1(unsigned long long int chave){
   int pc1[56] = {56, 48, 40, 32, 24, 16, 8,
                0, 57, 49, 41, 33, 25, 17,
@@ -315,171 +497,5 @@ unsigned long long int expancao(int right){
       resultado += aux;
     }
   }
-  return resultado;
-}
-
-int sBox(unsigned long long int entrada);
-int permutacaoP(int value);
-
-int main(){
-  inicializacaoMaskBit();
-  inicializacaoMaskBloco8();
-  inicializacaoMaskBloco6();
-
-  //Precisa ser vetor para fazer a leitura da entrada
-  int vetorEntrada[8], vetorChave[8];
-
-  //Leitura da entrada do texto
-  for(int i = 0; i < 8; i++){
-    scanf("%x", &vetorEntrada[i]);
-  }
-  unsigned long long int entrada = toLongLongInt(vetorEntrada);
-
-  //Leitura da entrada da chave
-  for(int i = 0; i < 8; i++){
-    scanf("%x", &vetorChave[i]);
-  }
-  unsigned long long int chave = toLongLongInt(vetorChave);
-
-  //Escrita da entrada do texto
-  printf("PLAIN TEXT\n");
-  printLongLongToHEX(entrada, 64);
-
-  //Escrita da entrada depois da Permutacao Inicial
-  printf("\nIP\n");
-  unsigned long long int ip = permutacaoInicial(entrada);
-  printLongLongToHEX(ip, 64);
-
-  //L e R
-  int right = ip & rightMask;
-  int left = ip >> 32;
-	printf("divisao %X \n%X\n", left, right);
-  //Escrita da entrada da chave
-  printf("\nCHAVE\n\n");
-  printLongLongToHEX(chave, 64);
-
-
-	unsigned long long int aux;
-
-  chave = permutacaoChavePC1(chave);
-	
-	for(int round = 1; round <= 16; round++){
-		chave = rotacaoChave(chave, round);
-		aux = escalonamentoChavePC2(chave);
-		printf("CHAVE DE ROUND %d\n", round);
-		printLongLongToHEX(aux, 48);
-	}
-
-  printf("\nEXPANCAO\n");
-
-  unsigned long long int exp = 0;
-  exp = expancao(right);
-  printLongLongToHEX(exp, 64);
-
-  printf("\nXOR\n");
-  unsigned long long int xorResult = 0;
-  xorResult = exp ^ chave;
-  printLongLongToHEX(xorResult, 64);
-
-  //unsigned long long int steste = 211420430091726;
-  printf("\nsBOX\n");
-  int sboxResult = sBox(xorResult);
-  printf("sbox: %X\n", sboxResult);
-
-  printf("\nROUND 1\n");
-  int result = permutacaoP(sboxResult);
-  result = left ^ result;
-  unsigned long long int round1 = right;
-  round1 = round1 << 32;
-  round1 = round1 | result;
-
-  printLongLongToHEX(round1, 64);
-  printf("%X\n", left);
-  printf("%X\n", right);
-}
-
-int sBox(unsigned long long int entrada){
-  int resultado = 0;
-  unsigned long long int aux, linha, linhaAux1, linhaAux2, coluna, tableValue;
-  aux = linha = linhaAux1 = linhaAux2 = coluna = tableValue = 0;
-  unsigned long long int maskColuna = 30;
-  for(int i=0; i < 8; i++){
-    aux = entrada & maskBloco6[i]; //pega 6 bits da Si ex: 101001
-    aux = aux >> (42-(i*6));
-
-    linhaAux1 = aux & maskBit[63];
-    linhaAux2 = aux & maskBit[58];
-    linhaAux2 = linhaAux2 >> 4;
-    linha = linhaAux1 | linhaAux2;
-
-    //printf("linha: %llu\n", linha);
-    coluna = aux & maskColuna; //maskcoluna = 30 = 011110
-    coluna = coluna >> 1;
-    //printf("coluna: %llu\n", coluna);
-
-    switch(i){
-      case 0:
-        tableValue = S1[linha][coluna];
-        break;
-      case 1:
-        tableValue = S2[linha][coluna];
-        break;
-      case 2:
-        tableValue = S3[linha][coluna];
-        break;
-      case 3:
-        tableValue = S4[linha][coluna];
-        break;
-      case 4:
-        tableValue = S5[linha][coluna];
-        break;
-      case 5:
-        tableValue = S6[linha][coluna];
-        break;
-      case 6:
-        tableValue = S7[linha][coluna];
-        break;
-      case 7:
-        tableValue = S8[linha][coluna];
-        break;
-    }
-
-    for(int j=0; j<28-(i*4); j++){
-      tableValue = tableValue*2;
-    }
-    resultado = resultado | tableValue;
-  }
-  return resultado;
-}
-
-int permutacaoP(int value){
-  int pTable[32] = {16,7,20,21,29,12,28,17,1,15,23,26,5,18,31,10,2,8,24,14,32,27,3,9,19,13,30,6,22,11,4,25};
-  int resultado, aux, posMap, posInicial, posResultado;
-  resultado = aux = 0;
-  for(int i=0; i < 32; i++){
-    posMap = pTable[i];
-    aux = value & maskBit[posMap+31];
-
-    posInicial = 32-posMap;
-    //shift left
-    if(posInicial > i){
-      while(posInicial > i){
-        aux = aux*2;
-        posInicial--;
-      }
-      resultado += aux;
-    }//shift right
-    else if(posInicial < i){
-      while(posInicial < i){
-        aux = aux/2;
-        posInicial++;
-      }
-      resultado += aux;
-    }
-    else{
-      resultado += aux;
-    }
-  }
-
   return resultado;
 }
