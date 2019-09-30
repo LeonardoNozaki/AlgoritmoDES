@@ -354,8 +354,8 @@ int main(){
 
   //L e R
   int right = ip & rightMask;
-  int left = ip & leftMask;
-
+  unsigned long long int left = ip & leftMask;
+  left >> 32;
   //Escrita da entrada da chave
   printf("\nCHAVE\n\n");
   printLongLongToHEX(chave, 64);
@@ -390,10 +390,14 @@ int main(){
 
   printf("\nROUND 1\n");
   int result = permutacaoP(sboxResult);
-  int teste = 4283201233;
-  unsigned long long int round1 = teste ^ result;
-  printLongLongToHEX(round1, 32);
-  printf("%X\n", result);
+  result = left ^ result;
+  unsigned long long int round1 = right;
+  round1 = round1 << 32;
+  round1 = round1 | result;
+
+  printLongLongToHEX(round1, 64);
+  printf("%X\n", left);
+  printf("%X\n", right);
 }
 
 int sBox(unsigned long long int entrada){
