@@ -12,6 +12,11 @@ unsigned long long int maskBit[64];
 unsigned long long int maskBloco8[8];
 unsigned long long int maskBloco6[8];
 
+//mascara para pegar os 32 bits da direita
+unsigned long long int rightMask = 4294967295;
+//mascara para pegar os 32 bits da esquerda
+unsigned long long int leftMask = 18446744069414584000;
+
 //Faz a inicializacao da maskBit
 void inicializacaoMaskBit(){
   maskBit[63] = 1;
@@ -283,14 +288,14 @@ unsigned long long int expancao(int right){
 
 
   unsigned long long int resultado = 0;
-  int aux;
+  unsigned long long int aux = 0;
   int posMap, posInicial, posResultado;
 
   for(int i = 0; i < 48; i++){
     posMap = map[i];
-    aux = right & maskBit[posMap+31];
+    aux = right & maskBit[posMap+32];
 
-    posInicial = 32-posMap; //posição do bit do aux
+    posInicial = 31-posMap; //posição do bit do aux
     posResultado = 47-i;  //a diferença entre posInicial/posResultado é a qtd de deslocamento do bit
 
     //shift right
@@ -315,9 +320,13 @@ unsigned long long int expancao(int right){
   return resultado;
 }
 
+int sBox(unsigned long long int entrada);
+int permutacaoP(int value);
+
 int main(){
   inicializacaoMaskBit();
   inicializacaoMaskBloco8();
+  inicializacaoMaskBloco6();
 
   //Precisa ser vetor para fazer a leitura da entrada
   int vetorEntrada[8], vetorChave[8];
@@ -343,6 +352,10 @@ int main(){
   unsigned long long int ip = permutacaoInicial(entrada);
   printLongLongToHEX(ip, 64);
 
+  //L e R
+  int right = ip & rightMask;
+  int left = ip & leftMask;
+
   //Escrita da entrada da chave
   printf("\nCHAVE\n\n");
   printLongLongToHEX(chave, 64);
@@ -359,51 +372,110 @@ int main(){
 		printLongLongToHEX(aux, 48);
 	}
 
-
-	
   printf("\nEXPANCAO\n");
-  int right;
+
   unsigned long long int exp = 0;
   exp = expancao(right);
-  printf("%llu\n", exp);
   printLongLongToHEX(exp, 64);
 
+  printf("\nXOR\n");
+  unsigned long long int xorResult = 0;
+  xorResult = exp ^ chave;
+  printLongLongToHEX(xorResult, 64);
+
+  //unsigned long long int steste = 211420430091726;
+  printf("\nsBOX\n");
+  int sboxResult = sBox(xorResult);
+  printf("sbox: %X\n", sboxResult);
+
+  printf("\nROUND 1\n");
+  int result = permutacaoP(sboxResult);
+  int teste = 4283201233;
+  unsigned long long int round1 = teste ^ result;
+  printLongLongToHEX(round1, 32);
+  printf("%X\n", result);
 }
 
 int sBox(unsigned long long int entrada){
-  int aux, linha, coluna, resultado;
-  aux = linha = coluna = resultado = 0;
+  int resultado = 0;
+  unsigned long long int aux, linha, linhaAux1, linhaAux2, coluna, tableValue;
+  aux = linha = linhaAux1 = linhaAux2 = coluna = tableValue = 0;
+  unsigned long long int maskColuna = 30;
   for(int i=0; i < 8; i++){
     aux = entrada & maskBloco6[i]; //pega 6 bits da Si ex: 101001
-    linha = aux & maskBit[63]; //pega o primeiro bit mais significativo ex: 000001
-    linha += (aux & maskBit[58])/16; //pega o ultimo bit e desloca para segunda posição ex: 101001 -> 000010
-    coluna += aux & 30; //30 = 011110
+    aux = aux >> (42-(i*6));
+
+    linhaAux1 = aux & maskBit[63];
+    linhaAux2 = aux & maskBit[58];
+    linhaAux2 = linhaAux2 >> 4;
+    linha = linhaAux1 | linhaAux2;
+
+    //printf("linha: %llu\n", linha);
+    coluna = aux & maskColuna; //maskcoluna = 30 = 011110
+    coluna = coluna >> 1;
+    //printf("coluna: %llu\n", coluna);
 
     switch(i){
       case 0:
-        resultado += S1[linha][coluna];
+        tableValue = S1[linha][coluna];
         break;
       case 1:
-        resultado += S2[linha][coluna];
+        tableValue = S2[linha][coluna];
         break;
       case 2:
-        resultado += S3[linha][coluna];
+        tableValue = S3[linha][coluna];
         break;
       case 3:
-        resultado += S4[linha][coluna];
+        tableValue = S4[linha][coluna];
         break;
       case 4:
-        resultado += S5[linha][coluna];
+        tableValue = S5[linha][coluna];
         break;
       case 5:
-        resultado += S6[linha][coluna];
+        tableValue = S6[linha][coluna];
         break;
       case 6:
-        resultado += S7[linha][coluna];
+        tableValue = S7[linha][coluna];
         break;
       case 7:
-        resultado += S8[linha][coluna];
+        tableValue = S8[linha][coluna];
         break;
+    }
+
+    for(int j=0; j<28-(i*4); j++){
+      tableValue = tableValue*2;
+    }
+    resultado = resultado | tableValue;
+  }
+  return resultado;
+}
+
+int permutacaoP(int value){
+  int pTable[32] = {16,7,20,21,29,12,28,17,1,15,23,26,5,18,31,10,2,8,24,14,32,27,3,9,19,13,30,6,22,11,4,25};
+  int resultado, aux, posMap, posInicial, posResultado;
+  resultado = aux = 0;
+  for(int i=0; i < 32; i++){
+    posMap = pTable[i];
+    aux = value & maskBit[posMap+31];
+
+    posInicial = 32-posMap;
+    //shift left
+    if(posInicial > i){
+      while(posInicial > i){
+        aux = aux*2;
+        posInicial--;
+      }
+      resultado += aux;
+    }//shift right
+    else if(posInicial < i){
+      while(posInicial < i){
+        aux = aux/2;
+        posInicial++;
+      }
+      resultado += aux;
+    }
+    else{
+      resultado += aux;
     }
   }
 
